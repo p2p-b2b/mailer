@@ -166,6 +166,7 @@ func main() {
 
   slog.Info("Mail service stopped gracefully.")
 }
+```
 
 ## Contributing
 
