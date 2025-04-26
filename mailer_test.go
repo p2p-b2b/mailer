@@ -7,13 +7,13 @@ import (
 )
 
 func TestMailContentBuilder_Build_Valid(t *testing.T) {
-	builder := MailContentBuilder{}
+	builder := NewMailContentBuilder() // Use constructor
 	content, err := builder.
 		WithFromName("John Doe").
 		WithFromAddress("john.doe@example.com"). // Added FromAddress
 		WithToName("Jane Doe").
 		WithToAddress("jane.doe@example.com").
-		WithMimeType("text/plain").
+		WithMimeType(MimeTypeTextPlain). // Use MimeType constant
 		WithSubject("Test Subject").
 		WithBody("Test Body").
 		Build()
@@ -34,8 +34,8 @@ func TestMailContentBuilder_Build_Valid(t *testing.T) {
 	if content.toAddress != "jane.doe@example.com" {
 		t.Errorf("Expected toAddress 'jane.doe@example.com', got '%s'", content.toAddress)
 	}
-	if content.mimeType != "text/plain" {
-		t.Errorf("Expected mimeType 'text/plain', got '%s'", content.mimeType)
+	if content.mimeType != MimeTypeTextPlain.String() { // Compare with string representation
+		t.Errorf("Expected mimeType '%s', got '%s'", MimeTypeTextPlain.String(), content.mimeType)
 	}
 	if content.subject != "Test Subject" {
 		t.Errorf("Expected subject 'Test Subject', got '%s'", content.subject)
@@ -47,13 +47,13 @@ func TestMailContentBuilder_Build_Valid(t *testing.T) {
 
 func TestMailContentBuilder_Build_Invalid(t *testing.T) {
 	validBuilder := func() *MailContentBuilder {
-		b := MailContentBuilder{}
+		b := NewMailContentBuilder() // Use constructor
 		return b.
 			WithFromName("John Doe").
 			WithFromAddress("john.doe@example.com").
 			WithToName("Jane Doe").
 			WithToAddress("jane.doe@example.com").
-			WithMimeType("text/plain").
+			WithMimeType(MimeTypeTextPlain). // Use MimeType constant
 			WithSubject("Test Subject").
 			WithBody("Test Body")
 	}
@@ -170,13 +170,13 @@ func TestFromAddressValidationMissing(t *testing.T) {
 	// This test checks if the fromAddress validation is indeed missing as observed.
 	// If this test fails, it means the validation was added to MailContentBuilder.Build()
 	// and the corresponding tests in TestMailContentBuilder_Build_Invalid should be uncommented.
-	builder := MailContentBuilder{}
+	builder := NewMailContentBuilder() // Use constructor
 	_, err := builder.
 		WithFromName("John Doe").
 		WithFromAddress("a@b"). // Invalid length
 		WithToName("Jane Doe").
 		WithToAddress("jane.doe@example.com").
-		WithMimeType("text/plain").
+		WithMimeType(MimeTypeTextPlain). // Use MimeType constant
 		WithSubject("Test Subject").
 		WithBody("Test Body").
 		Build()

@@ -75,32 +75,46 @@ type MailContent struct {
 }
 
 type MailContentBuilder struct {
-	MailContent MailContent
+	mailContent MailContent
+}
+
+func NewMailContentBuilder() *MailContentBuilder {
+	return &MailContentBuilder{
+		mailContent: MailContent{
+			fromName:    "",
+			fromAddress: "",
+			toName:      "",
+			toAddress:   "",
+			mimeType:    MimeTypeTextPlain.String(),
+			subject:     "",
+			body:        "",
+		},
+	}
 }
 
 func (b *MailContentBuilder) WithFromName(name string) *MailContentBuilder {
-	b.MailContent.fromName = name
+	b.mailContent.fromName = name
 	return b
 }
 
 func (b *MailContentBuilder) WithFromAddress(address string) *MailContentBuilder {
-	b.MailContent.fromAddress = address
+	b.mailContent.fromAddress = address
 	return b
 }
 
 func (b *MailContentBuilder) WithToName(name string) *MailContentBuilder {
-	b.MailContent.toName = name
+	b.mailContent.toName = name
 	return b
 }
 
 func (b *MailContentBuilder) WithToAddress(address string) *MailContentBuilder {
-	b.MailContent.toAddress = address
+	b.mailContent.toAddress = address
 	return b
 }
 
 func (b *MailContentBuilder) WithMimeType(mimeType MimeType) *MailContentBuilder {
 	// Remove the defaulting logic. Validation happens in Build().
-	b.MailContent.mimeType = mimeType.String()
+	b.mailContent.mimeType = mimeType.String()
 	return b
 }
 
@@ -109,53 +123,53 @@ func (b *MailContentBuilder) WithMimeTypeAsString(mimeType string) *MailContentB
 }
 
 func (b *MailContentBuilder) WithSubject(subject string) *MailContentBuilder {
-	b.MailContent.subject = subject
+	b.mailContent.subject = subject
 	return b
 }
 
 func (b *MailContentBuilder) WithBody(body string) *MailContentBuilder {
-	b.MailContent.body = body
+	b.mailContent.body = body
 	return b
 }
 
 func (b *MailContentBuilder) Build() (MailContent, error) {
-	if len(b.MailContent.fromName) < ValidMinFromNameLength || len(b.MailContent.fromName) > ValidMaxFromNameLength {
+	if len(b.mailContent.fromName) < ValidMinFromNameLength || len(b.mailContent.fromName) > ValidMaxFromNameLength {
 		return MailContent{}, &MailerError{
 			Message: fmt.Sprintf("fromName must be between %d and %d characters", ValidMinFromNameLength, ValidMaxFromNameLength),
 		}
 	}
 
-	if len(b.MailContent.toName) < ValidMinToNameLength || len(b.MailContent.toName) > ValidMaxToNameLength {
+	if len(b.mailContent.toName) < ValidMinToNameLength || len(b.mailContent.toName) > ValidMaxToNameLength {
 		return MailContent{}, &MailerError{
 			Message: fmt.Sprintf("toName must be between %d and %d characters", ValidMinToNameLength, ValidMaxToNameLength),
 		}
 	}
 
-	if len(b.MailContent.toAddress) < ValidMinToAddressLength || len(b.MailContent.toAddress) > ValidMaxToAddressLength {
+	if len(b.mailContent.toAddress) < ValidMinToAddressLength || len(b.mailContent.toAddress) > ValidMaxToAddressLength {
 		return MailContent{}, &MailerError{
 			Message: fmt.Sprintf("toAddress must be between %d and %d characters", ValidMinToAddressLength, ValidMaxToAddressLength),
 		}
 	}
 
-	if !slices.Contains(strings.Split(ValidMimeType, "|"), b.MailContent.mimeType) {
+	if !slices.Contains(strings.Split(ValidMimeType, "|"), b.mailContent.mimeType) {
 		return MailContent{}, &MailerError{
 			Message: fmt.Sprintf("mimeType must be one of the following: %s", ValidMimeType),
 		}
 	}
 
-	if len(b.MailContent.subject) < ValidMinSubjectLength || len(b.MailContent.subject) > ValidMaxSubjectLength {
+	if len(b.mailContent.subject) < ValidMinSubjectLength || len(b.mailContent.subject) > ValidMaxSubjectLength {
 		return MailContent{}, &MailerError{
 			Message: fmt.Sprintf("subject must be between %d and %d characters", ValidMinSubjectLength, ValidMaxSubjectLength),
 		}
 	}
 
-	if len(b.MailContent.body) < ValidMinBodyLength || len(b.MailContent.body) > ValidMaxBodyLength {
+	if len(b.mailContent.body) < ValidMinBodyLength || len(b.mailContent.body) > ValidMaxBodyLength {
 		return MailContent{}, &MailerError{
 			Message: fmt.Sprintf("body must be between %d and %d characters", ValidMinBodyLength, ValidMaxBodyLength),
 		}
 	}
 
-	return b.MailContent, nil
+	return b.mailContent, nil
 }
 
 // MailerService is an interface must be implemented by any mailer service
