@@ -110,7 +110,7 @@ func TestMailContentBuilder_Build_Invalid(t *testing.T) {
 		},
 		{
 			name:          "Invalid MimeType",
-			modifier:      func(b *MailContentBuilder) { b.WithMimeType("application/json") },
+			modifier:      func(b *MailContentBuilder) { b.WithMimeTypeAsString("application/json") },
 			expectedError: fmt.Sprintf("mimeType must be one of the following: %s", ValidMimeType),
 		},
 		{

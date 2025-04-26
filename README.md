@@ -2,27 +2,31 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/p2p-b2b/mailer.svg)](https://pkg.go.dev/github.com/p2p-b2b/mailer)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/p2p-b2b/mailer?style=plastic)
+[![Go Report Card](https://goreportcard.com/badge/github.com/p2p-b2b/mailer)](https://goreportcard.com/report/github.com/p2p-b2b/mailer)
 
-This package provides a concurrent email sending service for Go applications. It allows queueing emails and sending them asynchronously using a pool of workers via a configurable backend (e.g., SMTP).
+This package provides a robust and concurrent email sending service for Go applications. It allows queueing emails and sending them asynchronously using a pool of workers via a configurable backend (e.g., SMTP).
 
 ## Features
 
 * **Concurrent Sending:** Uses a worker pool to send emails concurrently.
-* **Buffering:** Queues emails in a buffered channel.
-* **Graceful Shutdown:** Supports context cancellation for stopping workers and waits for them to finish.
+* **Buffering:** Queues emails in a buffered channel, sized according to the worker count.
+* **Graceful Shutdown:** Supports context cancellation for stopping workers and waits for them to finish processing enqueued items.
 * **Pluggable Backend:** Uses a `MailerService` interface, allowing different sending mechanisms (e.g., SMTP, API-based services). An SMTP implementation (`MailerSMTP`) is included.
-* **Content Validation:** Includes a builder (`MailContentBuilder`) for creating validated `MailContent`.
-* **Enqueuing:** Supports enqueuing `MailContent` instances using the `Enqueue` method.
-* **Shutdown:** Stopping the service gracefully or relying on context cancellation for shutdown.
-* **Logging:** Uses the `slog` package for structured logging.
-* **Context Propagation:** Uses a context for cancellation and timeout propagation.
-* **Error Handling:** Returns errors for invalid content or sending failures.
-* **Customizable Worker Count:** Allows configuring the number of concurrent workers.
-* **Timeouts:** Configurable timeouts for operations (currently unused in core service logic but available).
-* **MIME Type Support:** Supports different MIME types for email content (e.g., text/plain, text/html).
-* **Sender and Recipient Names:** Allows specifying sender and recipient names along with email addresses.
-* **Subject and Body:** Supports setting the subject and body of the email.
-* **Email Address Validation:** Validates email addresses using the `net/mail` package.
+* **Content Validation:** Includes a builder (`MailContentBuilder`) for creating validated `MailContent` with checks for field lengths and allowed MIME types.
+* **Context Propagation:** Leverages `context.Context` for cancellation and timeout propagation throughout the sending process.
+* **Structured Logging:** Uses the standard `log/slog` package for informative logging.
+* **Error Handling:** Provides specific error types (`MailerError`, `MailQueueError`) for better error management.
+* **Customizable Worker Count:** Allows configuring the number of concurrent workers within defined limits.
+* **MIME Type Support:** Supports `text/plain` and `text/html` MIME types.
+* **Sender and Recipient Details:** Allows specifying sender and recipient names along with email addresses.
+
+## Installation
+
+To use this library in your project, install it using `go get`:
+
+```sh
+go get github.com/p2p-b2b/mailer@latest
+````
 
 ## Components
 

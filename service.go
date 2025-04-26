@@ -27,10 +27,10 @@ type MailQueueService interface {
 }
 
 type MailServiceConfig struct {
-	Ctx         context.Context
-	WorkerCount int
-	Timeout     time.Duration
-	Mailer      MailerService
+	Ctx         context.Context // Optional: Parent context for cancellation. Defaults to context.Background().
+	WorkerCount int             // Number of concurrent sending workers (1-100). Channel buffer size matches this count.
+	Timeout     time.Duration   // Optional: Timeout for operations (currently available but not used in core service logic).
+	Mailer      MailerService   // The backend mailer implementation (e.g., MailerSMTP). *Required*.
 }
 
 type MailService struct {
