@@ -175,9 +175,7 @@ func TestMailService_StartStopEnqueue(t *testing.T) {
 		t.Fatalf("Failed to create MailService: %v", err)
 	}
 
-	ctx := t.Context()
-
-	service.Start(ctx)
+	service.Start()
 
 	// Enqueue some emails
 	numEmails := 10
@@ -224,7 +222,10 @@ func TestMailService_ContextCancellation(t *testing.T) {
 		return nil
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	config := &MailServiceConfig{
+		Ctx:         ctx,
 		WorkerCount: 2, // Fewer workers than emails
 		Mailer:      mockMailer,
 	}
@@ -233,10 +234,9 @@ func TestMailService_ContextCancellation(t *testing.T) {
 		t.Fatalf("Failed to create MailService: %v", err)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	// We need a separate context for the enqueue goroutine that we don't cancel immediately
 	// Or simply let the enqueue goroutine run until it blocks or finishes.
-	service.Start(ctx) // Workers use the cancellable context
+	service.Start() // Workers use the cancellable context
 
 	// Run enqueue loop in a separate goroutine.
 	var enqueueWg sync.WaitGroup
@@ -305,6 +305,7 @@ func TestMailService_EnqueueBlocksWhenFull(t *testing.T) {
 	mockMailer := &MockMailerService{}
 	workerCount := 1 // Use a small buffer size (equal to worker count)
 	config := &MailServiceConfig{
+		Ctx:         t.Context(),
 		WorkerCount: workerCount,
 		Mailer:      mockMailer,
 	}
@@ -350,8 +351,7 @@ func TestMailService_EnqueueBlocksWhenFull(t *testing.T) {
 	// Cleanup: Start and stop the service to drain the channel and allow the blocked goroutine to potentially finish.
 	// This prevents the test leaving a goroutine blocked on the channel send.
 	t.Log("Cleaning up: Starting service to drain channel...")
-	ctx := t.Context()
-	service.Start(ctx)
+	service.Start()
 	// Allow time for the worker to potentially process the items
 	time.Sleep(50 * time.Millisecond)
 	t.Log("Cleaning up: Stopping service...")
@@ -367,8 +367,12 @@ func ExampleMailService_Enqueue() {
 	// Use a mock mailer for demonstration purposes
 	mockMailer := &MockMailerService{}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // Ensure context is cancelled eventually
+
 	// Configure the mail service
 	config := &MailServiceConfig{
+		Ctx:         ctx,
 		WorkerCount: 1, // One worker is sufficient for the example
 		Mailer:      mockMailer,
 	}
@@ -378,11 +382,7 @@ func ExampleMailService_Enqueue() {
 		return
 	}
 
-	// Start the service (required for workers to process emails)
-	// Use a background context for this simple example
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel() // Ensure context is cancelled eventually
-	service.Start(ctx)
+	service.Start()
 
 	// Create email content using the builder
 	content, err := (&MailContentBuilder{}).

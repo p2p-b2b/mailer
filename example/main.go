@@ -48,7 +48,7 @@ func main() {
 
 	// --- Start the Service ---
 	// Start the mail service workers. They will listen on the internal channel.
-	mailService.Start(appCtx) // Pass the context again for workers
+	mailService.Start() // Pass the context again for workers
 	slog.Info("Mail service started. Press Ctrl+C to stop.")
 
 	// --- Enqueue Emails (Example in a Goroutine) ---

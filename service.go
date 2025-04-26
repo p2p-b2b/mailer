@@ -73,13 +73,8 @@ func NewMailService(conf *MailServiceConfig) (*MailService, error) {
 	}, nil
 }
 
-func (ref *MailService) Start(ctx context.Context) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
+func (ref *MailService) Start() {
 	ref.mu.Lock()
-	ref.ctx = ctx
 	ref.mu.Unlock()
 
 	slog.Info("Starting mail service", "workerCount", ref.workerCount, "bufferSize", cap(ref.content))
