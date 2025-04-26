@@ -11,7 +11,7 @@ import (
 const (
 	ValidMinSMTPHostLength = 5
 	ValidMaxSMTPHostLength = 100
-	ValidSMTPPorts         = "25|465|587"
+	ValidSMTPPorts         = "25|465|587|1025|8025"
 	ValidMinUsernameLength = 1
 	ValidMaxUsernameLength = 100
 	ValidMinPasswordLength = 3
@@ -19,10 +19,10 @@ const (
 )
 
 type MailerSMTPConf struct {
-	SMTPHost string
-	SMTPPort int
-	Username string
-	Password string
+	SMTPHost string // SMTP server hostname (5-100 chars). *Required*.
+	SMTPPort int    // SMTP server port (must be 25, 465, or 587). *Required*.
+	Username string // SMTP username for authentication (1-100 chars). *Required*.
+	Password string // SMTP password for authentication (3-100 chars). *Required*.
 }
 
 type MailerSMTP struct {

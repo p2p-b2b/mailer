@@ -23,6 +23,21 @@ const (
 	ValidMaxBodyLength        = 20000
 )
 
+type MimeType string
+
+const (
+	MimeTypeTextPlain MimeType = "text/plain"
+	MimeTypeTextHTML  MimeType = "text/html"
+)
+
+func (m MimeType) String() string {
+	return string(m)
+}
+
+func (m MimeType) IsValid() bool {
+	return m == MimeTypeTextPlain || m == MimeTypeTextHTML
+}
+
 type MailerError struct {
 	Message string
 }
@@ -83,9 +98,14 @@ func (b *MailContentBuilder) WithToAddress(address string) *MailContentBuilder {
 	return b
 }
 
-func (b *MailContentBuilder) WithMimeType(mimeType string) *MailContentBuilder {
-	b.MailContent.mimeType = mimeType
+func (b *MailContentBuilder) WithMimeType(mimeType MimeType) *MailContentBuilder {
+	// Remove the defaulting logic. Validation happens in Build().
+	b.MailContent.mimeType = mimeType.String()
 	return b
+}
+
+func (b *MailContentBuilder) WithMimeTypeAsString(mimeType string) *MailContentBuilder {
+	return b.WithMimeType(MimeType(mimeType))
 }
 
 func (b *MailContentBuilder) WithSubject(subject string) *MailContentBuilder {
