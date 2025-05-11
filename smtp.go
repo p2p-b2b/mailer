@@ -19,10 +19,21 @@ const (
 )
 
 type MailerSMTPConf struct {
-	SMTPHost string // SMTP server hostname (5-100 chars). *Required*.
-	SMTPPort int    // SMTP server port (must be 25, 465, or 587). *Required*.
-	Username string // SMTP username for authentication (1-100 chars). *Required*.
-	Password string // SMTP password for authentication (3-100 chars). *Required*.
+	// SMTPHost is the hostname of the SMTP server (5-100 chars). *Required*.
+	// It must be a valid hostname or IP address.
+	SMTPHost string
+
+	// SMTPPort is the port of the SMTP server (must be 25, 465, or 587). *Required*.
+	// Valid ports are 25 (SMTP), 465 (SMTPS), 587 (Submission), 1025, and 8025.
+	// Ports 1025 and 8025 are less common and may be used in specific configurations, such as testing or non-standard setups.
+	SMTPPort int
+
+	// Username is the SMTP username for authentication (1-100 chars). *Required*.
+	Username string
+
+	// Password is the SMTP password for authentication (3-100 chars). *Required*.
+	// It should be kept secret and not logged or exposed.
+	Password string
 }
 
 type MailerSMTP struct {
@@ -87,7 +98,11 @@ Content-Type: %s;
 
 	if err := smtp.SendMail(
 		fmt.Sprintf("%s:%d", m.smtpHost, m.smtpPort),
-		smtp.PlainAuth("", m.username, m.password, m.smtpHost), m.username, []string{content.toAddress}, []byte(msg)); err != nil {
+		smtp.PlainAuth("", m.username, m.password, m.smtpHost),
+		m.username,
+		[]string{content.toAddress},
+		[]byte(msg),
+	); err != nil {
 		return &MailerError{
 			Message: fmt.Sprintf("Failed to send email: %v", err),
 		}

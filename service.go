@@ -2,7 +2,7 @@ package mailer
 
 import (
 	"context"
-	"errors" // Import errors package
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -27,10 +27,19 @@ type MailQueueService interface {
 }
 
 type MailServiceConfig struct {
-	Ctx         context.Context // Optional: Parent context for cancellation. Defaults to context.Background().
-	WorkerCount int             // Number of concurrent sending workers (1-100). Channel buffer size matches this count.
-	Timeout     time.Duration   // Optional: Timeout for operations (currently available but not used in core service logic).
-	Mailer      MailerService   // The backend mailer implementation (e.g., MailerSMTP). *Required*.
+	Ctx context.Context
+
+	// WorkerCount is the number of concurrent workers to process the mail queue.
+	// It must be between 1 and 100.
+	WorkerCount int
+
+	// Timeout is the duration for which the service will wait for a worker to finish processing before timing out.
+	// This is currently not used in the core service logic but can be implemented in the future.
+	Timeout time.Duration
+
+	// Mailer is the service responsible for sending emails.
+	// It must not be nil.
+	Mailer MailerService
 }
 
 type MailService struct {
@@ -44,28 +53,32 @@ type MailService struct {
 
 func NewMailService(conf *MailServiceConfig) (*MailService, error) {
 	if conf == nil {
-		return nil, &MailQueueError{Message: "MailServiceConfig cannot be nil"}
+		return nil, &MailQueueError{
+			Message: "MailServiceConfig cannot be nil",
+		}
 	}
 
 	if conf.Mailer == nil {
-		return nil, &MailQueueError{Message: "Mailer cannot be nil"}
+		return nil, &MailQueueError{
+			Message: "Mailer cannot be nil",
+		}
 	}
 
 	if conf.WorkerCount < ValidMinWorkerCount || conf.WorkerCount > ValidMaxWorkerCount {
-		return nil, &MailQueueError{Message: fmt.Sprintf("WorkerCount must be between %d and %d", ValidMinWorkerCount, ValidMaxWorkerCount)}
+		return nil, &MailQueueError{
+			Message: fmt.Sprintf("WorkerCount must be between %d and %d", ValidMinWorkerCount, ValidMaxWorkerCount),
+		}
 	}
 
-	// Create a buffered channel with size equal to the worker count
 	contentChan := make(chan MailContent, conf.WorkerCount)
 
-	// Ensure the service has a non-nil context internally, even if Start isn't called.
 	internalCtx := conf.Ctx
 	if internalCtx == nil {
 		internalCtx = context.Background()
 	}
 
 	return &MailService{
-		ctx:         internalCtx, // Use the initialized context
+		ctx:         internalCtx,
 		workerCount: conf.WorkerCount,
 		content:     contentChan,
 		mailer:      conf.Mailer,
@@ -73,53 +86,44 @@ func NewMailService(conf *MailServiceConfig) (*MailService, error) {
 	}, nil
 }
 
+// Start initializes the worker goroutines that will process the mail queue.
+// Each worker will listen on the content channel for new mail content to process.
+// The workers will run concurrently, and the number of workers is determined by the WorkerCount field.
+// The context provided in the configuration is used to manage the lifecycle of the workers.
+// If the context is cancelled, all workers will stop processing and exit gracefully.
+// The workers will log their status and any errors encountered during the email sending process.
 func (ref *MailService) Start() {
-	ref.mu.Lock()
-	ref.mu.Unlock()
-
-	slog.Info("Starting mail service", "workerCount", ref.workerCount, "bufferSize", cap(ref.content))
-
-	// Start worker goroutines
 	for i := 1; i <= ref.workerCount; i++ {
-		ref.wg.Add(1) // Increment WaitGroup for each worker we start
-		// Launch worker as an anonymous goroutine
-		go func(workerNum int) {
-			defer ref.wg.Done() // Ensure WaitGroup is decremented when worker exits
+		ref.wg.Add(1)
 
-			// Capture the context under read lock before starting the loop
+		go func(workerNum int) {
+			defer ref.wg.Done()
+
 			ref.mu.RLock()
 			workerCtx := ref.ctx
 			ref.mu.RUnlock()
 
-			slog.Info("Worker started", "worker", workerNum)
+			slog.Debug("Worker started", "worker", workerNum)
 			for {
-				// Main select loop: prioritize context cancellation check using the captured context.
 				select {
 				case <-workerCtx.Done():
-					// Context was cancelled, exit the worker loop.
 					slog.Warn("Context done, worker stopping", "worker", workerNum)
 					return
 				case content, ok := <-ref.content:
-					// Attempt to read from the content channel.
 					if !ok {
-						// Channel is closed, exit the worker loop.
 						slog.Warn("Content channel closed, worker stopping", "worker", workerNum)
 						return
 					}
 
-					// Process the mail content if read successfully.
-					slog.Info("Sending email", "worker", workerNum)
-					// Send should ideally respect the context internally as well. Use the captured context.
+					slog.Debug("Sending email", "worker", workerNum)
 					err := ref.mailer.Send(workerCtx, content)
 					if err != nil {
-						// Log errors, checking specifically for context-related errors from Send. Use the captured context.
 						if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 							slog.Warn("Email sending cancelled by context", "worker", workerNum, "error", err)
 						} else {
 							slog.Error("Error sending email", "worker", workerNum, "error", err)
 						}
 					}
-					// Loop continues, will check ctx.Done again first in the next iteration.
 				}
 			}
 		}(i)
@@ -133,7 +137,7 @@ func (ref *MailService) Stop() {
 	close(ref.content)
 
 	slog.Warn("Waiting for workers to finish...")
-	ref.wg.Wait() // Wait for all worker goroutines to call wg.Done()
+	ref.wg.Wait()
 	slog.Warn("All workers finished.")
 }
 
@@ -146,20 +150,17 @@ func (ref *MailService) Wait() {
 
 // Enqueue adds mail content to the queue. It returns an error if the service's context is cancelled during the attempt.
 func (ref *MailService) Enqueue(content MailContent) error {
-	slog.Info("Attempting to enqueue email")
-
-	// Acquire read lock to safely access ctx
 	ref.mu.RLock()
 	ctxDone := ref.ctx.Done()
-	ctxErr := ref.ctx.Err() // Capture error under lock too, though less critical
+	ctxErr := ref.ctx.Err()
 	ref.mu.RUnlock()
 
 	select {
 	case ref.content <- content:
-		slog.Info("Email enqueued successfully")
-		return nil // Successfully enqueued
+		slog.Debug("Email enqueued successfully")
+
+		return nil
 	case <-ctxDone:
-		// Context was cancelled while trying to enqueue (likely because buffer was full and workers were stopping).
 		slog.Warn("Failed to enqueue email, context cancelled", "error", ctxErr)
 		return ctxErr
 	}
