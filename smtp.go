@@ -24,8 +24,8 @@ type MailerSMTPConf struct {
 	SMTPHost string
 
 	// SMTPPort is the port of the SMTP server (must be 25, 465, or 587). *Required*.
-	// Common ports are 25 (SMTP), 465 (SMTPS), and 587 (Submission).
-	// Note: 1025 and 8025 are also valid for some configurations.
+	// Valid ports are 25 (SMTP), 465 (SMTPS), 587 (Submission), 1025, and 8025.
+	// Ports 1025 and 8025 are less common and may be used in specific configurations, such as testing or non-standard setups.
 	SMTPPort int
 
 	// Username is the SMTP username for authentication (1-100 chars). *Required*.
