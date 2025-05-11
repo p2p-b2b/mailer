@@ -34,8 +34,8 @@ func TestMailContentBuilder_Build_Valid(t *testing.T) {
 	if content.toAddress != "jane.doe@example.com" {
 		t.Errorf("Expected toAddress 'jane.doe@example.com', got '%s'", content.toAddress)
 	}
-	if content.mimeType != MimeTypeTextPlain.String() { // Compare with string representation
-		t.Errorf("Expected mimeType '%s', got '%s'", MimeTypeTextPlain.String(), content.mimeType)
+	if content.mimeType != MimeTypeTextPlain {
+		t.Errorf("Expected mimeType '%s', got '%s'", MimeTypeTextPlain.String(), content.mimeType.String())
 	}
 	if content.subject != "Test Subject" {
 		t.Errorf("Expected subject 'Test Subject', got '%s'", content.subject)

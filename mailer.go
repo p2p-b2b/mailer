@@ -23,29 +23,45 @@ const (
 	ValidMaxBodyLength        = 20000
 )
 
+// MailerService is an interface must be implemented by any mailer service
+// that is used to send emails.
+type MailerService interface {
+	Send(ctx context.Context, content MailContent) error
+}
+
+// MimeType is a custom type for MIME types.
 type MimeType string
 
 const (
+	// MimeTypeTextPlain is the MIME type for plain text emails.
 	MimeTypeTextPlain MimeType = "text/plain"
-	MimeTypeTextHTML  MimeType = "text/html"
+
+	// MimeTypeTextHTML is the MIME type for HTML emails.
+	MimeTypeTextHTML MimeType = "text/html"
 )
 
+// String returns the string representation of the MimeType.
 func (m MimeType) String() string {
 	return string(m)
 }
 
+// IsValid checks if the MimeType is valid.
 func (m MimeType) IsValid() bool {
 	return m == MimeTypeTextPlain || m == MimeTypeTextHTML
 }
 
+// MailerError is a custom error type for mailer-related errors.
+// It implements the error interface.
 type MailerError struct {
 	Message string
 }
 
+// Error implements the error interface for MailerError.
 func (e *MailerError) Error() string {
 	return e.Message
 }
 
+// MailContent represents the content of an email.
 type MailContent struct {
 	// fromName: The name of the sender
 	// e.g. "John Doe"
@@ -65,7 +81,7 @@ type MailContent struct {
 
 	// mimeType: The MIME type of the email
 	// e.g. "text/plain" or "text/html"
-	mimeType string
+	mimeType MimeType
 
 	// subject is the subject of the email
 	subject string
@@ -85,7 +101,7 @@ func NewMailContentBuilder() *MailContentBuilder {
 			fromAddress: "",
 			toName:      "",
 			toAddress:   "",
-			mimeType:    MimeTypeTextPlain.String(),
+			mimeType:    MimeTypeTextPlain,
 			subject:     "",
 			body:        "",
 		},
@@ -114,7 +130,7 @@ func (b *MailContentBuilder) WithToAddress(address string) *MailContentBuilder {
 
 func (b *MailContentBuilder) WithMimeType(mimeType MimeType) *MailContentBuilder {
 	// Remove the defaulting logic. Validation happens in Build().
-	b.mailContent.mimeType = mimeType.String()
+	b.mailContent.mimeType = mimeType
 	return b
 }
 
@@ -151,7 +167,7 @@ func (b *MailContentBuilder) Build() (MailContent, error) {
 		}
 	}
 
-	if !slices.Contains(strings.Split(ValidMimeType, "|"), b.mailContent.mimeType) {
+	if !slices.Contains(strings.Split(ValidMimeType, "|"), b.mailContent.mimeType.String()) {
 		return MailContent{}, &MailerError{
 			Message: fmt.Sprintf("mimeType must be one of the following: %s", ValidMimeType),
 		}
@@ -170,10 +186,4 @@ func (b *MailContentBuilder) Build() (MailContent, error) {
 	}
 
 	return b.mailContent, nil
-}
-
-// MailerService is an interface must be implemented by any mailer service
-// that is used to send emails.
-type MailerService interface {
-	Send(ctx context.Context, content MailContent) error
 }
