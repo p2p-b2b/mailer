@@ -103,7 +103,7 @@ func (ref *MailService) Start() {
 			workerCtx := ref.ctx
 			ref.mu.RUnlock()
 
-			slog.Info("Worker started", "worker", workerNum)
+			slog.Debug("Worker started", "worker", workerNum)
 			for {
 				select {
 				case <-workerCtx.Done():
@@ -115,7 +115,7 @@ func (ref *MailService) Start() {
 						return
 					}
 
-					slog.Info("Sending email", "worker", workerNum)
+					slog.Debug("Sending email", "worker", workerNum)
 					err := ref.mailer.Send(workerCtx, content)
 					if err != nil {
 						if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
@@ -150,9 +150,6 @@ func (ref *MailService) Wait() {
 
 // Enqueue adds mail content to the queue. It returns an error if the service's context is cancelled during the attempt.
 func (ref *MailService) Enqueue(content MailContent) error {
-	slog.Info("Attempting to enqueue email")
-
-	// Acquire read lock to safely access ctx
 	ref.mu.RLock()
 	ctxDone := ref.ctx.Done()
 	ctxErr := ref.ctx.Err()
@@ -160,7 +157,7 @@ func (ref *MailService) Enqueue(content MailContent) error {
 
 	select {
 	case ref.content <- content:
-		slog.Info("Email enqueued successfully")
+		slog.Debug("Email enqueued successfully")
 
 		return nil
 	case <-ctxDone:
